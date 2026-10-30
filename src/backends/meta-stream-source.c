@@ -19,6 +19,7 @@
 #include "config.h"
 
 #include "backends/meta-stream-source.h"
+#include "backends/meta-stream-source-window.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -1924,14 +1925,19 @@ build_format_params (MetaStreamSource       *source,
     spec_ptr = &spec;
 
   formats = meta_stream_source_get_formats (source);
-  for (format = formats; format->format; format++)
+  /* A window dma-buf is a fresh GPU blit. Browsers show black bands in it,
+   * while a memfd copy of the window buffer matches the screen. */
+  if (!META_IS_STREAM_SOURCE_WINDOW (source))
     {
-      add_format_param (source,
-                        pod_builder,
-                        pod_offsets,
-                        format,
-                        spec_ptr,
-                        TRUE);
+      for (format = formats; format->format; format++)
+        {
+          add_format_param (source,
+                            pod_builder,
+                            pod_offsets,
+                            format,
+                            spec_ptr,
+                            TRUE);
+        }
     }
   for (format = formats; format->format; format++)
     {
